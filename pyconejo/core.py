@@ -5,7 +5,7 @@ import sys
 import urllib
 
 
-LOG_FORMAT = ('%(levelname) -6s %(asctime)s %(name)s: %(message)s')
+LOG_FORMAT = ('%(levelname) -6s %(asctime)s %(process)d %(name)s: %(message)s')
 
 
 def rabbit_connection_url(host=None, port=None, username=None, password=None,
@@ -43,5 +43,7 @@ def rabbit_connect(host=None, port=None, username=None, password=None,
 def setup_logging(stream=None, level=logging.DEBUG):
     logging.basicConfig(stream=stream or sys.stderr,
                         level=level, format=LOG_FORMAT)
+
+    # pika can be overly verbose in debug mode
     pika_logger = logging.getLogger('pika')
-    pika_logger.setLevel(logging.INFO)
+    pika_logger.setLevel(logging.INFO if level <= logging.DEBUG else level)

@@ -8,8 +8,8 @@ setup(name='pyconejo',
       packages=find_packages(),
       entry_points={
         'console_scripts': [
-            'pyconejo-server = pyconejo.rpc_server:main',
-            'pyconejo-client = pyconejo.rpc_client:main'
+            'pyconejo-consumer = pyconejo.publisher:main',
+            'pyconejo-publisher = pyconejo.publisher:main'
         ]
       }
 )

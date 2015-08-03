@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import time
 import argparse
 import logging
 import pika
 import json
+import os
+import sys
 from pyconejo import core
 from pika import adapters
 
@@ -25,6 +28,11 @@ def setup_options(argv=None):
     parser.add_argument('-t', '--message-type', dest='message_type',
                         metavar='TYPE', default='application/json',
                         help="message content type")
+    parser.add_argument('-c' '--concurrent', dest='processes',
+                        metavar='N', default=1, type=int,
+                        help='number of multiple requests to make at a time')
+    parser.add_argument('-q', '--quiet', action='store_true', dest='quiet',
+                        help='quiet, produces output suitable for scripts')
 
     return parser.parse_args(argv)
 
@@ -45,7 +53,6 @@ class ExamplePublisher(object):
     EXCHANGE = 'message'
     EXCHANGE_TYPE = 'topic'
     QUEUE = 'text'
-    ROUTING_KEY = 'example.text'
 
     def __init__(self, amqp_url):
         """Setup the example publisher object, passing in the URL we will use
@@ -68,6 +75,7 @@ class ExamplePublisher(object):
         self.content_type = 'application/json'
         self.headers = {}
         self.num_messsages = 0
+        self.routing_key = "example.text"
 
     def connect(self):
         """This method connects to RabbitMQ, returning the connection handle.
@@ -224,9 +232,9 @@ class ExamplePublisher(object):
 
         """
         LOG.info('Binding %s to %s with %s',
-                    self.EXCHANGE, self.QUEUE, self.ROUTING_KEY)
+                    self.EXCHANGE, self.QUEUE, self.routing_key)
         self._channel.queue_bind(self.on_bindok, self.QUEUE,
-                                 self.EXCHANGE, self.ROUTING_KEY)
+                                 self.EXCHANGE, self.routing_key)
 
     def on_delivery_confirmation(self, method_frame):
         """Invoked by pika when RabbitMQ responds to a Basic.Publish RPC
@@ -290,11 +298,11 @@ class ExamplePublisher(object):
                                           headers=self.headers)
 
         if self.content_type == 'application/json':
-            str_msg = json.dumps(self.message, ensure_ascii=False)
+            str_msg = json.dumps(json.loads(self.message), ensure_ascii=False)
         else:
             str_msg = self.message
 
-        self._channel.basic_publish(self.EXCHANGE, self.ROUTING_KEY,
+        self._channel.basic_publish(self.EXCHANGE, self.routing_key,
                                     str_msg,
                                     properties)
         self._message_number += 1
@@ -373,12 +381,42 @@ class ExamplePublisher(object):
 
 def main(argv=None):
     args = setup_options()
-    core.setup_logging()
+
+    i = 0
+    pids = []
+    child = False
+    while True:
+        pid = os.fork()
+        if pid == 0:
+            LOG.debug('breaking')
+            child = True
+            break
+        pids.append(pid)
+        i += 1
+        if i >= args.processes:
+            break
+
+    if not child:
+        # wait until childs exit
+        while len(pids) > 0:
+            i = 0
+            while i < len(pids):
+                pid = pids[i]
+                try:
+                    os.waitpid(pid, 0)
+                    i += 1
+                except OSError:
+                    pids.remove(pid)
+
+        sys.exit(0)
+
+    core.setup_logging(level=logging.WARN if args.quiet else logging.DEBUG)
     example = ExamplePublisher(core.rabbit_connection_url())
     example.publish_interval = args.publish_interval
     example.message = args.message
     example.msg_content_type = args.message_type
     example.num_messages = args.num_messages
+    example.routing_key = "example.%s" % os.getpid()
     if args.message_type == 'json':
         example.content_type = 'application/json'
     else:
@@ -388,6 +426,8 @@ def main(argv=None):
         example.run()
     except KeyboardInterrupt:
         example.stop()
+
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()

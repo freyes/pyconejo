@@ -1,13 +1,29 @@
 #!/usr/bin/env python
+import argparse
 import logging
 import pika
 import multiprocessing
+import os
+import sys
 import uuid
 from pika import adapters
 from pyconejo import core
 
 
 LOG = logging.getLogger('pyconejo.rpc_server')
+
+def setup_options(argv=None):
+    parser = argparse.ArgumentParser(description='Publisher of messages.')
+    parser.add_argument('-q', '--quiet', action='store_true', dest='quiet',
+                        help='quiet, produces output suitable for scripts')
+    parser.add_argument('-n', '--num-messages', dest='num_messages',
+                        metavar='N', default=0, type=int,
+                        help=("number of messages before exiting, "
+                              "0 means don't stop"))
+    parser.add_argument('-r', '--routing-key', dest='routing_key',
+                        default='example.*', help='routing key')
+
+    return parser.parse_args(argv)
 
 
 # based https://pika.readthedocs.org/en/0.9.14/examples/tornado_consumer.html
@@ -16,7 +32,6 @@ class MyConsumer(object):
     EXCHANGE = 'message'
     EXCHANGE_TYPE = 'topic'
     QUEUE = 'text'
-    ROUTING_KEY = 'example.text'
 
     def __init__(self, amqp_url):
         self._connection = None
@@ -24,6 +39,9 @@ class MyConsumer(object):
         self._closing = False
         self._consumer_tag = None
         self._url = amqp_url
+        self.routing_key = 'example.text'
+        self.num_msgs_acked = 0
+        self.count_msgs_acked = 0
 
     def connect(self):
         LOG.info('Connecting to %s', self._url)
@@ -166,9 +184,9 @@ class MyConsumer(object):
 
         """
         LOG.info('Binding %s to %s with %s',
-                    self.EXCHANGE, self.QUEUE, self.ROUTING_KEY)
+                    self.EXCHANGE, self.QUEUE, self.routing_key)
         self._channel.queue_bind(self.on_bindok, self.QUEUE,
-                                 self.EXCHANGE, self.ROUTING_KEY)
+                                 self.EXCHANGE, self.routing_key)
 
     def add_on_cancel_callback(self):
         """Add a callback that will be invoked if RabbitMQ cancels the consumer
@@ -200,6 +218,7 @@ class MyConsumer(object):
         """
         LOG.info('Acknowledging message %s', delivery_tag)
         self._channel.basic_ack(delivery_tag)
+        self.count_msgs_acked += 1
 
     def on_message(self, unused_channel, basic_deliver, properties, body):
         """Invoked by pika when a message is delivered from RabbitMQ. The
@@ -218,6 +237,9 @@ class MyConsumer(object):
         LOG.info('Received message # %s from %s: %s',
                     basic_deliver.delivery_tag, properties.app_id, body)
         self.acknowledge_message(basic_deliver.delivery_tag)
+        if (self.num_msgs_acked > 0 and
+                self.count_msgs_acked >= self.num_msgs_acked):
+            self.stop()
 
     def on_cancelok(self, unused_frame):
         """This method is invoked by pika when RabbitMQ acknowledges the
@@ -305,14 +327,17 @@ class MyConsumer(object):
         LOG.info('Stopping')
         self._closing = True
         self.stop_consuming()
-        self._connection.ioloop.start()
         LOG.info('Stopped')
 
 
 def main():
-    core.setup_logging()
+    args = setup_options()
+
+    core.setup_logging(level=logging.WARN if args.quiet else logging.DEBUG)
 
     consumer = MyConsumer(core.rabbit_connection_url())
+    consumer.routing_key = args.routing_key
+    consumer.num_msgs_acked = args.num_messages
 
     try:
         consumer.run()

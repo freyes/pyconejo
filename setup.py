@@ -9,7 +9,9 @@ setup(name='pyconejo',
       entry_points={
         'console_scripts': [
             'pyconejo-consumer = pyconejo.publisher:main',
-            'pyconejo-publisher = pyconejo.publisher:main'
+            'pyconejo-publisher = pyconejo.publisher:main',
+            'pyconejo-rpc-server = pyconejo.rpc_server:main',
+            'pyconejo-rpc-client = pyconejo.rpc_client:main',
         ]
       }
 )

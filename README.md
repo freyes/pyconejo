@@ -7,6 +7,8 @@ provides different commands depening on the pattern you want to use, for the
 moment publisher/consumer and RPC (an echo function) are supported, I hope to
 add more in the future.
 
+![rabbitmq management plugin graph](screenshot.png "RabbitMQ management plugin graph while running pyconejo")
+
 ## Install
 
 ### From github

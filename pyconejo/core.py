@@ -1,6 +1,7 @@
 import logging
 import os
 import pika
+import signal
 import sys
 import urllib
 
@@ -74,5 +75,7 @@ def forkme_and_wait(num_processes):
                 i += 1
             except OSError:
                 pids.remove(pid)
+            except KeyboardInterrupt:
+                os.kill(pid, signal.SIGTERM)
 
     return True

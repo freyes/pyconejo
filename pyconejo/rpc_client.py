@@ -5,6 +5,7 @@ import pika
 import os
 import uuid
 import sys
+import time
 import uuid
 from pyconejo import core
 
@@ -12,6 +13,9 @@ LOG = logging.getLogger('pyconejo.rpc_client')
 
 def setup_options(argv=None):
     parser = argparse.ArgumentParser(description='Publisher of messages.')
+    parser.add_argument('-i', '--publish-interval', dest='publish_interval',
+                        metavar='N', default=1, type=float,
+                        help='publish messages every N seconds')
     parser.add_argument('-q', '--quiet', action='store_true', dest='quiet',
                         help='quiet, produces output suitable for scripts')
     parser.add_argument('-n', '--num-messages', dest='num_messages',
@@ -72,13 +76,18 @@ def main():
     rpc.routing_key = args.routing_key
 
     i = 0
-    while i < args.num_messages:
-        arg = str(uuid.uuid4())
-        LOG.debug("Requesting echo(%s)" % arg)
-        response = rpc.call(arg)
-        LOG.info("Got %r" % (response,))
-        assert arg == response, "%s != %s" % (arg, response)
-        i += 1
+    try:
+        while args.num_messages == 0 or i < args.num_messages:
+            arg = str(uuid.uuid4())
+            LOG.debug("Requesting echo(%s)" % arg)
+            response = rpc.call(arg)
+            LOG.info("Got %r" % (response,))
+            assert arg == response, "%s != %s" % (arg, response)
+            i += 1
+            time.sleep(args.publish_interval)
+    except KeyboardInterrupt:
+        # TODO: clean connections and asdf
+        sys.exit(0)
 
 
 if __name__ == "__main__":

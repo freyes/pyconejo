@@ -47,3 +47,32 @@ def setup_logging(stream=None, level=logging.DEBUG):
     # pika can be overly verbose in debug mode
     pika_logger = logging.getLogger('pika')
     pika_logger.setLevel(logging.INFO if level <= logging.DEBUG else level)
+
+
+def forkme_and_wait(num_processes):
+    """
+    :returns: False for children, True for father
+    """
+    i = 0
+    pids = []
+    while True:
+        pid = os.fork()
+        if pid == 0:
+            return False
+        pids.append(pid)
+        i += 1
+        if i >= num_processes:
+            break
+
+    # wait until childs exit
+    while len(pids) > 0:
+        i = 0
+        while i < len(pids):
+            pid = pids[i]
+            try:
+                os.waitpid(pid, 0)
+                i += 1
+            except OSError:
+                pids.remove(pid)
+
+    return True

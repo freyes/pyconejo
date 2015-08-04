@@ -49,6 +49,5 @@ So using `pyconejo-publisher -c 20 -i 0.01` the program will push ~2000 msgs/sec
 * Start the client running `pyconejo-rpc-client`
 
 By default this will make a 1 call every second, to increase the throughput
-adjust `-c` and `-i` , the have the same meaning as in
-`pyconejo-publisher`. So using `pyconejo-rpc-client -c 20 -i 0.01` the program
-will push ~2000 msgs/sec
+adjust `-c` , the have the same meaning as in `pyconejo-publisher`. So using
+`pyconejo-rpc-client -c 20` the have 20 concurrent processes pushing messages.

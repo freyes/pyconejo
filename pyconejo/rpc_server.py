@@ -22,6 +22,9 @@ def setup_options(argv=None):
                               "0 means don't stop"))
     parser.add_argument('-r', '--routing-key', dest='routing_key',
                         default='example.*', help='routing key')
+    parser.add_argument('-d', '--response-delay', dest="response_delay",
+                        default=0, metavar="N", type=float,
+                        help="Wait N seconds before answering to the request")
 
     return parser.parse_args(argv)
 
@@ -42,6 +45,7 @@ class MyConsumer(object):
         self.routing_key = 'example.text'
         self.num_msgs_acked = 0
         self.count_msgs_acked = 0
+        self.response_delay = 0
 
     def connect(self):
         LOG.info('Connecting to %s', self._url)
@@ -237,18 +241,22 @@ class MyConsumer(object):
         LOG.info('Received message # %s from %s: %s',
                     basic_deliver.delivery_tag, properties.app_id, body)
 
-        ch = unused_channel
-        ch.basic_publish(exchange='',
-                         routing_key=properties.reply_to,
-                         properties=pika.BasicProperties(correlation_id = \
-                                                         properties.correlation_id),
-                         body=body)
-        #ch.basic_ack(delivery_tag = method.delivery_tag)
+        def reply():
+            ch = unused_channel
+            p = pika.BasicProperties(correlation_id = properties.correlation_id)
+            ch.basic_publish(exchange='', routing_key=properties.reply_to,
+                             properties=p, body=body)
 
-        self.acknowledge_message(basic_deliver.delivery_tag)
-        if (self.num_msgs_acked > 0 and
-                self.count_msgs_acked >= self.num_msgs_acked):
-            self.stop()
+            self.acknowledge_message(basic_deliver.delivery_tag)
+            if (self.num_msgs_acked > 0 and
+                    self.count_msgs_acked >= self.num_msgs_acked):
+                self.stop()
+
+        if self.response_delay > 0:
+            LOG.debug('Delaying response %.2f secs' % self.response_delay)
+            self._connection.add_timeout(self.response_delay, reply)
+        else:
+            reply()
 
     def on_cancelok(self, unused_frame):
         """This method is invoked by pika when RabbitMQ acknowledges the
@@ -347,6 +355,7 @@ def main():
     consumer = MyConsumer(core.rabbit_connection_url())
     consumer.routing_key = args.routing_key
     consumer.num_msgs_acked = args.num_messages
+    consumer.response_delay = args.response_delay
 
     try:
         consumer.run()

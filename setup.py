@@ -16,7 +16,7 @@ setup(name='pyconejo',
       long_description=long_description,
       entry_points={
         'console_scripts': [
-            'pyconejo-consumer = pyconejo.publisher:main',
+            'pyconejo-consumer = pyconejo.consumer:main',
             'pyconejo-publisher = pyconejo.publisher:main',
             'pyconejo-rpc-server = pyconejo.rpc_server:main',
             'pyconejo-rpc-client = pyconejo.rpc_client:main',

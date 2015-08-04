@@ -10,7 +10,7 @@ from pyconejo import core
 from pika import adapters
 
 
-LOG = logging.getLogger(__name__)
+LOG = logging.getLogger('pyconejo.publisher')
 
 
 def setup_options(argv=None):

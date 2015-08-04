@@ -10,7 +10,7 @@ from pika import adapters
 from pyconejo import core
 
 
-LOG = logging.getLogger('pyconejo.rpc_server')
+LOG = logging.getLogger('pyconejo.consumer')
 
 def setup_options(argv=None):
     parser = argparse.ArgumentParser(description='Publisher of messages.')

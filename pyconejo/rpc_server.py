@@ -2,15 +2,12 @@
 import argparse
 import logging
 import pika
-import multiprocessing
-import os
-import sys
-import uuid
 from pika import adapters
 from pyconejo import core
 
 
 LOG = logging.getLogger('pyconejo.rpc_server')
+
 
 def setup_options(argv=None):
     parser = argparse.ArgumentParser(description='Publisher of messages.')
@@ -160,8 +157,8 @@ class MyConsumer(object):
         """Invoked by pika when RabbitMQ has finished the Exchange.Declare RPC
         command.
 
-        :param pika.Frame.Method unused_frame: Exchange.DeclareOk response frame
-
+        :param pika.Frame.Method unused_frame: Exchange.DeclareOk response
+                                               frame
         """
         LOG.info('Exchange declared')
         self.setup_queue(self.QUEUE)
@@ -243,7 +240,7 @@ class MyConsumer(object):
 
         def reply():
             ch = unused_channel
-            p = pika.BasicProperties(correlation_id = properties.correlation_id)
+            p = pika.BasicProperties(correlation_id=properties.correlation_id)
             ch.basic_publish(exchange='', routing_key=properties.reply_to,
                              properties=p, body=body)
 

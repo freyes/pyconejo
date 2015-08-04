@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import time
 import argparse
 import logging
 import pika
@@ -204,7 +203,8 @@ class ExamplePublisher(object):
         """Invoked by pika when RabbitMQ has finished the Exchange.Declare RPC
         command.
 
-        :param pika.Frame.Method unused_frame: Exchange.DeclareOk response frame
+        :param pika.Frame.Method unused_frame: Exchange.DeclareOk response
+                                               frame
 
         """
         LOG.info('Exchange declared')
@@ -378,6 +378,7 @@ class ExamplePublisher(object):
         self.close_channel()
         self.close_connection()
         LOG.info('Stopped')
+
 
 def main(argv=None):
     args = setup_options()

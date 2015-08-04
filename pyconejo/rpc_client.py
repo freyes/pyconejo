@@ -2,7 +2,6 @@
 import argparse
 import logging
 import pika
-import os
 import uuid
 import sys
 import time
@@ -10,6 +9,7 @@ import uuid
 from pyconejo import core
 
 LOG = logging.getLogger('pyconejo.rpc_client')
+
 
 def setup_options(argv=None):
     parser = argparse.ArgumentParser(description='Publisher of messages.')
@@ -52,12 +52,11 @@ class RpcClient(object):
     def call(self, n):
         self.response = None
         self.corr_id = str(uuid.uuid4())
+        props = pika.BasicProperties(reply_to=self.callback_queue,
+                                     correlation_id=self.corr_id)
         self.channel.basic_publish(exchange='',
                                    routing_key=self.routing_key,
-                                   properties=pika.BasicProperties(
-                                         reply_to = self.callback_queue,
-                                         correlation_id = self.corr_id,
-                                         ),
+                                   properties=props,
                                    body=str(n))
         while self.response is None:
             self.connection.process_data_events()

@@ -1,4 +1,11 @@
+from os import path
 from setuptools import setup, find_packages
+
+
+here = path.dirname(path.abspath(__file__))
+with open(path.join(here, 'README.md')) as f:
+    long_description = f.read()
+
 
 setup(name='pyconejo',
       version='0.1',
@@ -6,6 +13,7 @@ setup(name='pyconejo',
       author='Felipe Reyes',
       author_email='freyes@tty.cl',
       packages=find_packages(),
+      long_description=long_description,
       entry_points={
         'console_scripts': [
             'pyconejo-consumer = pyconejo.publisher:main',

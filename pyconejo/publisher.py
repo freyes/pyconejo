@@ -28,7 +28,7 @@ def setup_options(argv=None):
     parser.add_argument('-t', '--message-type', dest='message_type',
                         metavar='TYPE', default='application/json',
                         help="message content type")
-    parser.add_argument('-c' '--concurrent', dest='processes',
+    parser.add_argument('-c', '--concurrent', dest='processes',
                         metavar='N', default=1, type=int,
                         help='number of multiple requests to make at a time')
     parser.add_argument('-q', '--quiet', action='store_true', dest='quiet',

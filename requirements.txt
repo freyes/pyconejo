@@ -1,2 +1,4 @@
 pika
 tornado
+eventlet
+oslo.messaging

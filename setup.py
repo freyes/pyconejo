@@ -28,6 +28,8 @@ setup(name='pyconejo',
             'pyconejo-publisher = pyconejo.publisher:main',
             'pyconejo-rpc-server = pyconejo.rpc_server:main',
             'pyconejo-rpc-client = pyconejo.rpc_client:main',
+            'pyconejo-oslo-rpc-server = pyconejo.oslo_rpc_server:main',
+            'pyconejo-oslo-rpc-client = pyconejo.oslo_rpc_client:main',
         ]
       }
 )

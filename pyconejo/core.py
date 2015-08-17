@@ -1,6 +1,8 @@
+import argparse
 import logging
 import os
 import pika
+import json
 import signal
 import sys
 import urllib
@@ -79,3 +81,44 @@ def forkme_and_wait(num_processes):
                 os.kill(pid, signal.SIGTERM)
 
     return True
+
+
+def common_options_server(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser(description='')
+
+    parser.add_argument('-q', '--quiet', action='store_true', dest='quiet',
+                        help='quiet, produces output suitable for scripts')
+    parser.add_argument('-n', '--num-messages', dest='num_messages',
+                        metavar='N', default=0, type=int,
+                        help=("number of messages before exiting, "
+                              "0 means don't stop"))
+    parser.add_argument('-r', '--routing-key', dest='routing_key',
+                        default='example.*', help='routing key')
+
+    parser.add_argument('-d', '--response-delay', dest="response_delay",
+                        default=0, metavar="N", type=float,
+                        help="Wait N seconds before answering to the request")
+    return parser
+
+
+def common_options_client(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser(description='Publisher of messages.')
+
+    parser.add_argument('-i', '--publish-interval', dest='publish_interval',
+                        metavar='N', default=1, type=float,
+                        help='publish messages every N seconds')
+    parser.add_argument('-n', '--num-messages', dest='num_messages',
+                        metavar='N', default=0, type=int,
+                        help=("number of messages before exiting, "
+                              "0 means don't stop"))
+    parser.add_argument('-m', '--message', dest='message',
+                        metavar='MSG', default=json.dumps({'hello': 'world'}),
+                        help="message content to publish")
+    parser.add_argument('-c', '--concurrent', dest='processes',
+                        metavar='N', default=1, type=int,
+                        help='number of multiple requests to make at a time')
+    parser.add_argument('-q', '--quiet', action='store_true', dest='quiet',
+                        help='quiet, produces output suitable for scripts')
+    return parser

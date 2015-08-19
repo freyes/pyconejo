@@ -35,6 +35,7 @@ class ServerControlEndpoint(object):
         self.server = server
         self._counter = 0
         self.response_delay = 0
+        self.num_messages = 0
 
     def stop(self, ctx):
         if self.server:
@@ -47,6 +48,10 @@ class ServerControlEndpoint(object):
         if self.response_delay > 0:
             LOG.debug('Delaying reply %.2f secs' % self.response_delay)
             time.sleep(self.response_delay)
+
+        if self.num_messages > 0 and self._counter >= self.num_messages:
+            LOG.debug('Reached max number of messages to reply, stopping...')
+            self.stop(ctx)
 
         return arg
 
@@ -67,19 +72,23 @@ def main(argv=None):
     server = oslo_messaging.get_rpc_server(transport, target, endpoints,
                                            executor='eventlet')
     control.server = server
+    control.num_messages = opts.num_messages
     t_start = time.time()
 
     try:
         server.start()
         server.wait()
+        t_end = time.time()
     except KeyboardInterrupt:
         t_end = time.time()
-        print('*** Stats ***')
-        msgs_per_sec = float(control._counter) / float(t_end - t_start)
-        print('msgs/sec:\t%.2f' % (msgs_per_sec, ))
-        print('msgs:\t%d' % control._counter)
-        print('secs:\t%d' % (t_end - t_start, ))
-        LOG.info("Exciting...")
+        server.stop()
+
+    print('*** Stats ***')
+    msgs_per_sec = float(control._counter) / float(t_end - t_start)
+    print('msgs/sec:\t%.2f' % (msgs_per_sec, ))
+    print('msgs:\t%d' % control._counter)
+    print('secs:\t%d' % (t_end - t_start, ))
+    LOG.info("Exciting...")
 
 
 if __name__ == "__main__":

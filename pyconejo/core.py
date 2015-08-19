@@ -4,15 +4,18 @@ import os
 import pika
 import json
 import signal
+import socket
 import sys
 import urllib
 
 
 LOG_FORMAT = ('%(levelname) -6s %(asctime)s %(process)d %(name)s: %(message)s')
+DEFAULT_TOPIC = 'pyconejo'
+DEFAULT_SERVER_NAME = socket.gethostname().split('.')[0]
 
 
 def rabbit_connection_url(host=None, port=None, username=None, password=None,
-                          vhost=None):
+                          vhost=None, driver='amqp'):
 
     params = {
         'host': host or os.environ.get('PYCONEJO_HOST', 'localhost'),
@@ -21,9 +24,10 @@ def rabbit_connection_url(host=None, port=None, username=None, password=None,
         'password': password or os.environ.get('PYCONEJO_PASSWORD', 'guest'),
         'virtual_host': urllib.quote(vhost or os.environ.get('PYCONEJO_VHOST',
                                                              '/'), safe=''),
+        'driver': driver,
     }
 
-    return ("amqp://%(username)s:%(password)s@%(host)s:%(port)s"
+    return ("%(driver)s://%(username)s:%(password)s@%(host)s:%(port)s"
             "/%(virtual_host)s") % params
 
 
@@ -83,9 +87,9 @@ def forkme_and_wait(num_processes):
     return True
 
 
-def common_options_server(parser=None):
+def common_options_server(parser=None, description=''):
     if parser is None:
-        parser = argparse.ArgumentParser(description='')
+        parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('-q', '--quiet', action='store_true', dest='quiet',
                         help='quiet, produces output suitable for scripts')
@@ -102,9 +106,9 @@ def common_options_server(parser=None):
     return parser
 
 
-def common_options_client(parser=None):
+def common_options_client(parser=None, description=''):
     if parser is None:
-        parser = argparse.ArgumentParser(description='Publisher of messages.')
+        parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('-i', '--publish-interval', dest='publish_interval',
                         metavar='N', default=1, type=float,

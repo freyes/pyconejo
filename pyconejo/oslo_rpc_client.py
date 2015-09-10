@@ -21,6 +21,8 @@ def setup_options(argv=None):
                         dest='transport_cleanup',
                         help='Do not release the resources associated with '
                              'the transport')
+    parser.add_argument('--renew-transport-after', type=int,
+                        dest='renew_transport')
 
     return parser.parse_args(argv)
 
@@ -49,24 +51,35 @@ def main(argv=None):
     t = TestClient(transport)
     ctxt = {'a': 1}
     i = 0
+    errors = 0
     try:
         while opts.num_messages == 0 or i < opts.num_messages:
             arg = opts.message + str(uuid.uuid4())
             LOG.debug("Requesting echo(%s)" % arg)
-            response = t.echo(ctxt, arg)
-            LOG.info("Got %r" % (response,))
-            assert arg == response, "%s != %s" % (arg, response)
-            i += 1
+            try:
+                response = t.echo(ctxt, arg)
+                LOG.info("Got %r" % (response,))
+                assert arg == response, "%s != %s" % (arg, response)
+                i += 1
+            except messaging.exceptions.MessagingTimeout as ex:
+                LOG.warn('Received MessagingTimeout exception: %s' % str(ex))
+                errors += 1
+
             if opts.publish_interval > 0:
                 time.sleep(opts.publish_interval)
 
             if not opts.reuse_transport:
-                if opts.transport_cleanup:
-                    # removes the reply_* queue associated with this transport
-                    t._client.transport.cleanup()
+                renew = True
+                if opts.renew_transport > 0 and i % opts.renew_transport != 0:
+                    renew = False
 
-                transport = messaging.get_transport(cfg.CONF, transport_url)
-                t = TestClient(transport)
+                if renew:
+                    if opts.transport_cleanup:
+                        # removes the reply_* queue associated with this transport
+                        t._client.transport.cleanup()
+
+                    transport = messaging.get_transport(cfg.CONF, transport_url)
+                    t = TestClient(transport)
 
     except KeyboardInterrupt:
         # TODO: clean connections and asdf

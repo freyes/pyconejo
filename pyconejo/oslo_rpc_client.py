@@ -23,6 +23,8 @@ def setup_options(argv=None):
                              'the transport')
     parser.add_argument('--renew-transport-after', type=int,
                         dest='renew_transport')
+    parser.add_argument('--no-uuid', action="store_true", dest="no_uuid",
+                        help="Do not append a new UUID on each message")
 
     return parser.parse_args(argv)
 
@@ -54,7 +56,11 @@ def main(argv=None):
     errors = 0
     try:
         while opts.num_messages == 0 or i < opts.num_messages:
-            arg = opts.message + str(uuid.uuid4())
+            if opts.no_uuid:
+                arg = opts.message
+            else:
+                arg = opts.message + str(uuid.uuid4())
+
             LOG.debug("Requesting echo(%s)" % arg)
             try:
                 response = t.echo(ctxt, arg)

@@ -81,10 +81,12 @@ def main(argv=None):
 
                 if renew:
                     if opts.transport_cleanup:
-                        # removes the reply_* queue associated with this transport
+                        # removes the reply_* queue associated with this
+                        # transport
                         t._client.transport.cleanup()
 
-                    transport = messaging.get_transport(cfg.CONF, transport_url)
+                    transport = messaging.get_transport(cfg.CONF,
+                                                        transport_url)
                     t = TestClient(transport)
 
     except KeyboardInterrupt:
